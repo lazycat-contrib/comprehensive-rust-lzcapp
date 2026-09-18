@@ -1,5 +1,0 @@
-ignore_directories([
-    "book",
-    "target",
-    "third_party",
-])
