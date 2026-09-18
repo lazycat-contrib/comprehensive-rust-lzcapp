@@ -1,0 +1,69 @@
+name: Sync upstream and publish LazyCat application
+
+on:
+  # Daily upstream check; GitHub Actions cron is UTC (CST = UTC+8)
+  schedule:
+    - cron: "0 2 * * *"
+  push:
+    branches:
+      - master
+  pull_request:
+    paths:
+      - .github/lazycat-action.yml
+      - .github/workflows/lazycat.yml
+      - lzc-build.yml
+      - lzc-manifest.yml
+      - package.yml
+      - build.sh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # 上游无 release tag：以 main 分支 HEAD commit SHA 为变更基准，
+  # 有变化则 bump patch 并记录新 SHA，push 触发下方 lazycat 发布。
+  sync-upstream:
+    if: github.event_name != 'push' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Sync upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          LATEST="$(gh api repos/read-x/your-first-rust-class/commits/main --jq '.sha')"
+          OLD="$(cat .upstream-sha)"
+          echo "upstream=$LATEST old=$OLD"
+          if [ -z "$LATEST" ] || [ "$LATEST" = "$OLD" ]; then
+            echo "no update needed"
+            exit 0
+          fi
+          # bump patch: 1.0.0 -> 1.0.1 -> ...
+          VERSION="$(sed -n 's/^version: *//p' package.yml)"
+          NEW_VERSION="$(echo "$VERSION" | awk -F. '{print $1"."$2"."($3+1)}')"
+          sed -i "s/^version: .*/version: $NEW_VERSION/" package.yml
+          echo "$LATEST" > .upstream-sha
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.yml .upstream-sha
+          git commit -m "chore: bump to upstream $LATEST ($NEW_VERSION)"
+          git push
+
+  lazycat:
+    # schedule 事件只做上游检查；发布由 sync 产生的 push 触发
+    if: github.event_name != 'schedule'
+    uses: ca-x/lazycat-github-action/.github/workflows/lazycat.yml@v1
+    with:
+      operation: auto
+      config: .github/lazycat-action.yml
+      dry-run: ${{ github.event_name == 'pull_request' }}
+      versioned-release-asset: true
+    # 仅发布喵喵商店（MiaoMiao private store）；官方平台不发布，LZC_API_TOKEN 不映射
+    secrets:
+      APPSTORE_URL: ${{ secrets.APPSTORE_URL }}
+      APPSTORE_TOKEN: ${{ secrets.APPSTORE_TOKEN }}
+      APP_ID: ${{ secrets.APP_ID }}
+      PRIVATE_STORE_GROUP_CODES: ${{ secrets.PRIVATE_STORE_GROUP_CODES }}

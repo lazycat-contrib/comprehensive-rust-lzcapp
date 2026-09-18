@@ -1,0 +1,15 @@
+package: cloud.lazycat.app.comprehensive-rust
+version: 1.0.0
+name: Comprehensive Rust
+description: "Google 出品：Rust 系统课程（多语言：中/英/日/韩）"
+min_os_version: "1.5.0"
+homepage: https://github.com/google/comprehensive-rust
+author: google
+license: CC BY 4.0
+locales:
+  zh:
+    name: Comprehensive Rust
+    description: "Google 出品：Rust 系统课程（多语言：中/英/日/韩）"
+  en:
+    name: Comprehensive Rust
+    description: "Google's Rust systems course (en/zh-CN/zh-TW/ja/ko)"
