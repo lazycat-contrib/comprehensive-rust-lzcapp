@@ -1,5 +1,5 @@
 package: cloud.lazycat.app.comprehensive-rust
-version: 1.0.0
+version: 1.0.1
 name: Comprehensive Rust
 description: "Google 出品：Rust 系统课程（多语言：中/英/日/韩）"
 min_os_version: "1.5.0"
